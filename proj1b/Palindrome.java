@@ -1,42 +1,64 @@
 public class Palindrome {
-
-    /**
-     * Return a Deque where the characters appear in the same
-     * order as in the String
-     */
-    public Deque<Character> wordToDeque(String word) {
-        Deque<Character> wordInDeque = new ArrayDeque<>();
-        for (int i = 0; i < word.length(); i++) {
-            wordInDeque.addLast(word.charAt(i));
+    public Deque<Character> wordToDeque(String word){
+        Deque<Character> word2 = new ArrayDeque<>();
+        for(int i = 0; i < word.length(); i ++){
+            word2.addLast(word.charAt(i));
         }
-        return wordInDeque;
+        return word2;
     }
 
-    /**
-     * To determine whether a word is palindrome or not
-     */
-    private boolean isPalindrome(Deque<Character> wordInDeque) {
-        while (wordInDeque.size() > 1) {
-            return wordInDeque.removeFirst() == wordInDeque.removeLast() && isPalindrome(wordInDeque);
+    public boolean isPalindrome(String word){
+        Deque D1 = wordToDeque(word);
+        String Reword = new StringBuilder(word).reverse().toString();
+        Deque D2 = wordToDeque(Reword);
+        int wordlength = D1.size() / 2;
+        if(word == null){
+            return false;
+        }else{
+            if(D1.size() <= 1){
+                return true;
+            }else{
+                return isPalindromehelper(wordlength, D1, D2);
+            }
         }
-        return true;
     }
 
-    public boolean isPalindrome(String word) {
-        return isPalindrome(wordToDeque(word));
-    }
-
-    /**
-     * TO determine whether a word is a off-by-one palindrome
-     */
-    private boolean isPalindrome(Deque<Character> wordInDeque, CharacterComparator cc) {
-        while (wordInDeque.size() > 1) {
-            return cc.equalChars(wordInDeque.removeFirst(), wordInDeque.removeLast()) && isPalindrome(wordInDeque, cc);
+    private boolean isPalindromehelper(int wordlength, Deque D1, Deque D2){
+        if(wordlength <= 0){
+            return true;
+        }else{
+            if(D1.removeFirst() == D2.removeFirst()){
+                return isPalindromehelper(wordlength - 1, D1, D2);
+            }else{
+                return false;
+            }
         }
-        return true;
     }
 
     public boolean isPalindrome(String word, CharacterComparator cc) {
-        return isPalindrome(wordToDeque(word), cc);
+        Deque D1 = wordToDeque(word);
+        String reword = new StringBuilder(word).reverse().toString();
+        Deque D2 = wordToDeque(reword);
+        int wordlength = D1.size() / 2;
+        if (word == null) {
+            return false;
+        } else {
+            if (D1.size() <= 1) {
+                return true;
+            } else {
+                return isPalindromehelper(wordlength, cc, D1, D2);
+            }
+        }
+    }
+    private boolean isPalindromehelper(int wordlength, CharacterComparator cc, Deque D1, Deque D2){
+        if(wordlength <= 0){
+            return true;
+        }else{
+            if(cc.equalChars((char) D1.removeFirst(), (char) D2.removeFirst())){
+                return isPalindromehelper(wordlength - 1, cc, D1, D2);
+            }else{
+                return false;
+            }
+        }
     }
 }
