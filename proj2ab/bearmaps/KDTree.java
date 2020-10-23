@@ -1,135 +1,102 @@
 package bearmaps;
-
-import java.util.Collections;
 import java.util.List;
 
 public class KDTree implements PointSet {
     private static final boolean HORIZONTAL = false;
     private Node root;
+    private class Node implements Comparable{
+        private Node left;
+        private Node right;
+        private Point p;
+        private boolean orientation;
 
+        private Node(Point p, boolean orientation) {
+            this.p = p;
+            this.orientation = orientation;
+        }
+
+        private Point getPoint() {
+            return p;
+        }
+
+        private boolean getOrientation() {
+            return orientation;
+        }
+
+        @Override
+        public int compareTo(Object o) {
+            if (getOrientation()) {
+                return Double.compare(p.getY(),((Node) o).getPoint().getY());
+            } else {
+                return Double.compare(p.getX(),((Node) o).getPoint().getX());
+            }
+        }
+
+    }
     public KDTree(List<Point> points) {
-        Collections.shuffle(points);
-        for (Point point : points) {
-            root = insert(point, root, HORIZONTAL);
+        for (Point point: points) {
+            insert(point);
         }
     }
 
-    // Insert points into the KDTree.
-    private Node insert(Point point, Node node, boolean splitDim) {
-        if (node == null) {
-            return new Node(point, splitDim);
+    public void insert(Point p) {
+        if (p == null) {
+            throw new IllegalArgumentException();
         }
+        root = insert(p, root, HORIZONTAL);
+    }
 
-        // If point has the same coordinate as the node point,
-        // just return the node;
-        if (point.equals(node.getPoint())) {
-            return node;
+    private Node insert(Point p, Node T, boolean orientation) {
+        if (T == null ) {
+            return new Node(p, orientation);
         }
-
-        int cmp = comparePoints(point, node.getPoint(), splitDim);
-        if (cmp < 0) {
-            node.left = insert(point, node.getLeft(), !splitDim);
+        if (T.getPoint().equals(p)) {
+            return T;
+        }
+        int comp = new Node(p, orientation).compareTo(T);
+        if (comp > 0) {
+            T.right = insert(p, T.right, !orientation);
         } else {
-            node.right = insert(point, node.getRight(), !splitDim);
+            T.left = insert(p, T.left, !orientation);
         }
-
-        return node;
+        return T;
     }
+
 
     @Override
-    // Find the nearest point to the target point.
     public Point nearest(double x, double y) {
-        Point target = new Point(x, y);
-        return nearest(root, target, root.getPoint());
+        return nearestHelper(root,root, new Point(x, y), HORIZONTAL).getPoint();
     }
 
-    private Point nearest(Node node, Point target, Point best) {
-        if (node == null) {
+    private Node nearestHelper(Node N, Node best, Point target, boolean orientation) {
+        Node goodSide;
+        Node badSide;
+        if (N == null) {
             return best;
         }
+        double curDistance = Point.distance(N.getPoint(), target);
+        double bestDistance = Point.distance(best.getPoint(),target);
+        if (Double.compare(curDistance, bestDistance) < 0) best = N;
 
-        // Compare the current best point with the current node's point.
-        double bestDist = Point.distance(best, target);
-        double currDist = Point.distance(node.getPoint(), target);
-        if (Double.compare(currDist, bestDist) < 0) {
-            best = node.getPoint();
-        }
-
-        Node goodSideNode;
-        Node badSideNode;
-        int cmp = comparePoints(target, node.getPoint(), node.getSplitDim());
-        if (cmp < 0) {
-            goodSideNode = node.getLeft();
-            badSideNode = node.getRight();
+        if (new Node(target, orientation).compareTo(N) > 0) {
+            goodSide = N.right;
+            badSide = N.left;
         } else {
-            goodSideNode = node.getRight();
-            badSideNode = node.getLeft();
+            goodSide = N.left;
+            badSide = N.right;
         }
-
-        // DFS in goodSide first, then check the badSide, done recursively.
-        best = nearest(goodSideNode, target, best);
-        if (isWorthLooking(node, target, best)) {
-            best = nearest(badSideNode, target, best);
+        best = nearestHelper(goodSide, best, target, !orientation);
+        if (checker(N, target, bestDistance)) {
+            best = nearestHelper(badSide, best, target, !orientation);
         }
-
         return best;
     }
 
-    // Check whether the badSide intersects with the circle that,
-    // centred at target point with radius of square distance between
-    // target point and best point. If intersects, then the badSide is
-    // worth looking.
-    private boolean isWorthLooking(Node node, Point target, Point best) {
-        double distToBest = Point.distance(best, target);
-        double distToBad;
-        if (node.splitDim == HORIZONTAL) {
-            distToBad = Point.distance(new Point(node.point.getX(), target.getY()), target);
+    private boolean checker(Node cur, Point target, Double Length) {
+        if (cur.getOrientation()) {
+            return Math.pow(cur.getPoint().getY() - target.getY(), 2) < Length;
         } else {
-            distToBad = Point.distance(new Point(target.getX(), node.point.getY()), target);
-        }
-        return Double.compare(distToBad, distToBest) < 0;
-    }
-
-    // Compare two points based on the split dimension of the current node.
-    private int comparePoints(Point a, Point b, boolean splitDim) {
-        if (splitDim == HORIZONTAL) {
-            return Double.compare(a.getX(), b.getX());
-        } else {
-            return Double.compare(a.getY(), b.getY());
+            return Math.pow(cur.getPoint().getX() - target.getX(), 2) < Length;
         }
     }
-
-    private class Node {
-        private Point point;
-        private boolean splitDim;
-        private Node left;
-        private Node right;
-
-        Node(Point point, boolean splitDim) {
-            this.point = point;
-            this.splitDim = splitDim;
-            left = null;
-            right = null;
-        }
-
-        public Point getPoint() {
-            return point;
-        }
-
-        public Node getLeft() {
-            return left;
-        }
-
-        public Node getRight() {
-            return right;
-        }
-
-        public boolean getSplitDim() {
-            return splitDim;
-        }
-    }
-
-//    public static void main(String[] args) {
-//
-//    }
 }
